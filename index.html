@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Multiplayer</title>
+
+    <style>
+      /* --- din CSS här, exakt samma som du har --- */
+      :root {
+        --bg: #0b1020;
+        --panel: #111a33;
+        --panel2: #0f1730;
+        --text: #e9eefc;
+        --muted: #aab6e8;
+        --accent: #7cf7c2;
+        --danger: #ff6b81;
+        --border: rgba(255, 255, 255, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: radial-gradient(
+            1000px 600px at 20% 20%,
+            rgba(124, 247, 194, 0.14),
+            transparent 55%
+          ),
+          radial-gradient(
+            900px 600px at 80% 30%,
+            rgba(120, 140, 255, 0.12),
+            transparent 60%
+          ),
+          var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      }
+
+      .app {
+        width: min(1100px, 100%);
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 14px;
+      }
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.06),
+          rgba(255, 255, 255, 0.03)
+        );
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .title {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .title h1 {
+        font-size: 16px;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+      .badge {
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .hud {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .hud .pill {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.18);
+        color: var(--text);
+      }
+      .layout {
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+      .canvas-wrap {
+        background: rgba(0, 0, 0, 0.16);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px;
+        position: relative;
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 10px;
+        background: linear-gradient(
+          180deg,
+          rgba(17, 26, 51, 0.9),
+          rgba(15, 23, 48, 0.9)
+        );
+      }
+      .overlay {
+        position: absolute;
+        inset: 10px;
+        border-radius: 10px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.62);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 16px;
+        text-align: center;
+      }
+      .overlay.show {
+        display: flex;
+      }
+      .overlay h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+      .overlay p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .btnrow {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: rgba(124, 247, 194, 0.1);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 12px;
+        transition: transform 0.05s ease, background 0.2s ease;
+      }
+      button:hover {
+        background: rgba(124, 247, 194, 0.16);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      .side {
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+      .section {
+        background: rgba(0, 0, 0, 0.14);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .section h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .row {
+        display: grid;
+        gap: 8px;
+      }
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.18);
+        color: var(--text);
+        outline: none;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .scorelist {
+        display: grid;
+        gap: 8px;
+        max-height: 250px;
+        overflow: auto;
+        padding-right: 6px;
+      }
+      .scoreitem {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.14);
+        font-size: 13px;
+      }
+      .scoreitem b {
+        font-weight: 700;
+      }
+      .scoreitem span {
+        color: var(--muted);
+      }
+      .hintkeys {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .keycap {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.16);
+        color: var(--text);
+      }
+      .danger {
+        color: var(--danger);
+      }
+      @media (max-width: 920px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <div class="card">
+        <div class="topbar">
+          <div class="title">
+            <h1>Snake Multiplayer</h1>
+            <span class="badge"
+              >Student #: <span id="studentNumber">??</span></span
+            >
+          </div>
+          <div class="hud">
+            <div class="pill">Status: <b id="statusText">Menu</b></div>
+            <div class="pill">Time: <b id="timeText">--</b></div>
+            <div class="pill">P1 Len: <b id="p1Text">2</b></div>
+            <div class="pill">P2 Len: <b id="p2Text">2</b></div>
+          </div>
+        </div>
+
+        <div class="layout">
+          <div class="canvas-wrap">
+            <canvas id="game" width="720" height="480"></canvas>
+
+            <div id="overlay" class="overlay">
+              <div>
+                <h2 id="overlayTitle">Game Over</h2>
+                <p id="overlayMsg">Tryck “New match” för att starta om.</p>
+                <div class="btnrow">
+                  <button id="btnNewMatch">New match</button>
+                  <button id="btnTogglePause">Pause/Resume</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Controls</h3>
+            <div class="hintkeys">
+              <span class="keycap">↑</span>
+              <span class="keycap">↓</span>
+              <span class="keycap">←</span>
+              <span class="keycap">→</span>
+              <span class="keycap">P (pause)</span>
+              <span class="keycap">R (restart)</span>
+            </div>
+            <p class="small">
+              Riktning byts och slår igenom på <b>nästa tick</b>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card side">
+        <div class="section">
+          <h3>Multiplayer</h3>
+          <div class="grid2">
+            <div class="row">
+              <label>Player name</label>
+              <input id="playerName" placeholder="Max" />
+            </div>
+            <div class="btnrow">
+              <button id="btnHost">Host</button>
+              <button id="btnJoin">Join</button>
+            </div>
+            <div class="row">
+              <label>Session ID</label>
+              <input id="sessionId" placeholder="(fyll i för Join)" />
+            </div>
+
+            <div class="row">
+              <label>Vote link</label>
+              <button id="btnVote">Open voting link</button>
+              <p class="small">Krav: spelet ska länka till omröstningen.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Scoreboard (localStorage)</h3>
+          <div id="scoreList" class="scorelist"></div>
+          <div class="btnrow">
+            <button id="btnClearScores" class="danger">Clear (dev)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
